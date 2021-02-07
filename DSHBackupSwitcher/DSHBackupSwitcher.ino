@@ -152,16 +152,67 @@ void zetToestel()
   if ((alarmOudInAlarm) && (!alarmNieuwInAlarm))
   {
     // nieuw niet in alarm oud wel
-    activeerToestel(2);
+    klepEnActiveer(2);
+    //activeerToestel(2);
   } else if ((!alarmOudInAlarm) && (alarmNieuwInAlarm)) {
     // oud niet in alarm nieuw wel
-    activeerToestel(1);
+    klepEnActiveer(1);
+    //activeerToestel(1);
   } else if ((!alarmOudInAlarm) && (!alarmNieuwInAlarm)) {
     // beiden niet in alarm
-    activeerToestel(1);
+    klepEnActiveer(1);
+    //activeerToestel(1);
   } else {
     SerialUSB.println("alarm, beide toestellen in alarm");
   }
+}
+void klepEnActiveer(int toestel)
+{
+  switch (toestel) {
+    //1 = oud, 2 = nieuw
+    case 1:
+      Indio.digitalWrite(1, HIGH);
+      Indio.digitalWrite(3, LOW);
+      if (Indio.digitalRead(2) == HIGH)
+      {
+        activeerToestel(toestel);
+      } else {
+        deactiveerBeide();
+      }
+      break;
+    case 2:
+      Indio.digitalWrite(3, HIGH);
+      Indio.digitalWrite(1, LOW);
+      if (Indio.digitalRead(4) == HIGH)
+      {
+        activeerToestel(toestel);
+      } else {
+        deactiveerBeide();
+      }
+      break;
+  }
+}
+void deactiveerBeide()
+{
+  uint8_t result;
+  result = toestelNieuw.writeSingleRegister(0, 2);
+  if (result == toestelNieuw.ku8MBSuccess)
+  {
+    SerialUSB.println("Nieuw in standby (deactiveer beide)");
+  } else {
+    SerialUSB.print("Alarm bij standby nieuw (deactiveer beide): ");
+    SerialUSB.println(result);
+  }
+  result = toestelOud.writeSingleRegister(0, 2);
+  if (result == toestelOud.ku8MBSuccess)
+  {
+    SerialUSB.println("Oud in standby (deactiveer beide)");
+  } else {
+    SerialUSB.print("Alarm bij standby Oud (deactiveer beide): ");
+    SerialUSB.println(result);
+  }
+  toestelOud.clearResponseBuffer();
+  toestelNieuw.clearResponseBuffer();
 }
 void activeerToestel(int toestel)
 {
