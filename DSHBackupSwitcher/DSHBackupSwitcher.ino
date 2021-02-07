@@ -33,7 +33,7 @@ byte byteNumber = 1;
 GEMPage menuPageMain("Menu");
 SelectOptionByte optionsArray[] = {{"Oud", 1}, {"Nieuw", 2}};
 GEMSelect myByteSelect(2, optionsArray);
-GEMItem menuItemByteNumber("Forceer:", byteNumber, myByteSelect);
+GEMItem menuItemByteNumber("Prio:", byteNumber, myByteSelect);
 
 GEM_u8g2 menu(u8g2);
 
