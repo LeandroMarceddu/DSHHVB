@@ -29,11 +29,11 @@ int counter = 0;
 U8G2_UC1701_MINI12864_F_2ND_4W_HW_SPI u8g2(U8G2_R2, /* cs=*/ 19, /* dc=*/ 22);
 int number = -512;
 boolean enablePrint = false;
-byte byteNumber = 1;
+byte prioriteit = 1;
 GEMPage menuPageMain("Menu");
 SelectOptionByte optionsArray[] = {{"Oud", 1}, {"Nieuw", 2}};
 GEMSelect myByteSelect(2, optionsArray);
-GEMItem menuItemByteNumber("Prio:", byteNumber, myByteSelect);
+GEMItem menuItemByteNumber("Prio:", prioriteit, myByteSelect);
 
 GEM_u8g2 menu(u8g2);
 
@@ -160,7 +160,15 @@ void zetToestel()
     //activeerToestel(1);
   } else if ((!alarmOudInAlarm) && (!alarmNieuwInAlarm)) {
     // beiden niet in alarm
-    klepEnActiveer(1);
+    klepEnActiveer(prioriteit);
+//    switch (prioriteit) {
+//      case 1:
+//        klepEnActiveer(1);
+//        break;
+//      case 2:
+//        klepEnActiveer(2);
+//        break;
+//    }
     //activeerToestel(1);
   } else {
     SerialUSB.println("alarm, beide toestellen in alarm");
