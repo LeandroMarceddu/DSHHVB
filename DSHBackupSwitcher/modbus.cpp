@@ -6,15 +6,17 @@
 
 ModbusMaster toestelOud;
 ModbusMaster toestelNieuw;
-
+uint32_t t3_5 = (1000000 * 39) / 9600 + 500;
 void preTransmission()
 {
+  delayMicroseconds(t3_5);
   digitalWrite(MAX485_RE_NEG, 1);
 }
 
 void postTransmission()
 {
   digitalWrite(MAX485_RE_NEG, 0);
+  delayMicroseconds(t3_5);
 }
 void setupModbus()
 {
@@ -27,5 +29,4 @@ void setupModbus()
   toestelNieuw.begin(2, Serial);
   toestelNieuw.preTransmission(preTransmission);
   toestelNieuw.postTransmission(postTransmission); 
-  Serial.begin(9600);
 }

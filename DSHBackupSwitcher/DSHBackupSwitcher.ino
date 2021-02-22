@@ -13,6 +13,7 @@ extern ModbusMaster toestelOud;
 extern ModbusMaster toestelNieuw;
 
 int period = 1000;
+int extraDelay = 60000;
 unsigned long time_now = 0;
 bool alarmOudInAlarm, alarmNieuwInAlarm;
 int demandpct;
@@ -57,8 +58,12 @@ void setup() {
   Indio.digitalMode(2, INPUT);
   Indio.digitalMode(3, OUTPUT);
   Indio.digitalMode(4, INPUT);
+  Indio.digitalMode(5, OUTPUT);
+  Indio.digitalMode(6, INPUT);
   Indio.digitalMode(7, OUTPUT);
   Indio.digitalMode(8, OUTPUT);
+
+  Indio.digitalWrite(5, HIGH); //check vrijgave
 
 }
 void setupMenu() {
@@ -69,8 +74,14 @@ void setupMenu() {
 }
 
 void loop() {
+  if (menu.readyForKey()) {
+    // ...detect key press using U8g2 library
+    // and pass pressed button to menu
+    menu.registerKeyPress(u8g2.getMenuEvent());
+  }
   // If menu is ready to accept button press...
   if ((unsigned long)(millis() - time_now) > period) {
+
     // elke seconde pullen, niet delay gebruiken, dat verneukt modbus (na 2 dagen ~5m vertraging, eindelijk weten we waarom)
     time_now = millis();
     /*uint8_t result;
@@ -92,12 +103,7 @@ void loop() {
       }*/
     leesAlarmen();
     leesInputs();
-    zetToestel();
-  }
-  if (menu.readyForKey()) {
-    // ...detect key press using U8g2 library
-    // and pass pressed button to menu
-    menu.registerKeyPress(u8g2.getMenuEvent());
+    if (Indio.digitalRead(6)) zetToestel();
   }
 }
 void schrijfDemand(int toestel)
@@ -149,26 +155,27 @@ void schrijfDemand(int toestel)
 }
 void zetToestel()
 {
-  if ((alarmOudInAlarm) && (!alarmNieuwInAlarm))
+  SerialUSB.println("we hebben vrijgave");
+  if ((!alarmOudInAlarm) && (alarmNieuwInAlarm))
   {
     // nieuw niet in alarm oud wel
     klepEnActiveer(2);
     //activeerToestel(2);
-  } else if ((!alarmOudInAlarm) && (alarmNieuwInAlarm)) {
+  } else if ((alarmOudInAlarm) && (!alarmNieuwInAlarm)) {
     // oud niet in alarm nieuw wel
     klepEnActiveer(1);
     //activeerToestel(1);
-  } else if ((!alarmOudInAlarm) && (!alarmNieuwInAlarm)) {
+  } else if ((alarmOudInAlarm) && (alarmNieuwInAlarm)) {
     // beiden niet in alarm
     klepEnActiveer(prioriteit);
-//    switch (prioriteit) {
-//      case 1:
-//        klepEnActiveer(1);
-//        break;
-//      case 2:
-//        klepEnActiveer(2);
-//        break;
-//    }
+    //    switch (prioriteit) {
+    //      case 1:
+    //        klepEnActiveer(1);
+    //        break;
+    //      case 2:
+    //        klepEnActiveer(2);
+    //        break;
+    //    }
     //activeerToestel(1);
   } else {
     SerialUSB.println("alarm, beide toestellen in alarm");
@@ -282,27 +289,22 @@ void leesAlarmen()
   uint8_t oud, nieuw;
   oud = toestelOud.readCoils(0, 1);
   nieuw = toestelNieuw.readCoils(0, 1);
-  if ((oud == toestelOud.ku8MBSuccess) && (nieuw == toestelNieuw.ku8MBSuccess))
+  if (oud == toestelOud.ku8MBSuccess)
   {
     alarmOudInAlarm = toestelOud.getResponseBuffer(0);
-    alarmNieuwInAlarm = toestelNieuw.getResponseBuffer(0);
-    if (alarmOudInAlarm)
-    {
-      Indio.digitalWrite(7, HIGH);
-    } else {
-      Indio.digitalWrite(7, LOW);
-    }
-    if (alarmNieuwInAlarm)
-    {
-      Indio.digitalWrite(8, HIGH);
-    } else {
-      Indio.digitalWrite(8, LOW);
-    }
-    SerialUSB.print("alarm oud ");
-    SerialUSB.println(alarmOudInAlarm);
-    SerialUSB.print("alarm nieuw ");
-    SerialUSB.println(alarmNieuwInAlarm);
+
   } else {
+    alarmOudInAlarm = 0;
+  }
+  if (nieuw == toestelNieuw.ku8MBSuccess)
+  {
+    alarmNieuwInAlarm = toestelNieuw.getResponseBuffer(0);
+  } else {
+    alarmOudInAlarm = 0;
+  }
+  if ((!alarmOudInAlarm) || (!alarmNieuwInAlarm))
+  {
+
     SerialUSB.println("Alarm, kan ergens geen waardes opvragen van toestel");
     SerialUSB.print("Oud ");
     SerialUSB.print(oud);
@@ -310,6 +312,24 @@ void leesAlarmen()
     SerialUSB.println(nieuw);
   }
 
+  if (!alarmOudInAlarm)
+  {
+    Indio.digitalWrite(7, LOW);
+    //delay(extraDelay);
+  } else {
+    Indio.digitalWrite(7, HIGH);
+  }
+  if (!alarmNieuwInAlarm)
+  {
+    Indio.digitalWrite(8, LOW);
+    //delay(extraDelay);
+  } else {
+    Indio.digitalWrite(8, HIGH);
+  }
+  SerialUSB.print("alarm oud ");
+  SerialUSB.println(alarmOudInAlarm);
+  SerialUSB.print("alarm nieuw ");
+  SerialUSB.println(alarmNieuwInAlarm);
   toestelOud.clearResponseBuffer();
   toestelNieuw.clearResponseBuffer();
 }
